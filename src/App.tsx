@@ -77,6 +77,7 @@ type Clip = {
   id: string;
   userId: string;
   content: string;
+  contentHtml?: string; // rich text preserved silently — not rendered in UI
   createdAt: Timestamp | null;
   category?: string;
   device?: string;
@@ -371,10 +372,12 @@ function InputCard({
   onSend,
   onSendSuggestion,
 }: {
-  onSend: (content: string) => Promise<void>;
+  onSend: (content: string, contentHtml?: string) => Promise<void>;
   onSendSuggestion?: () => void;
 }) {
   const [content, setContent] = useState("");
+  const [contentHtml, setContentHtml] = useState<string | undefined>(undefined);
+  const justPasted = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -383,6 +386,25 @@ function InputCard({
 
   const handlePaste = async () => {
     try {
+      // Prefer ClipboardItem API — captures HTML formatting alongside plain text
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        let plain = "";
+        let html = "";
+        for (const item of items) {
+          if (item.types.includes("text/html"))
+            html = await (await item.getType("text/html")).text();
+          if (item.types.includes("text/plain"))
+            plain = await (await item.getType("text/plain")).text();
+        }
+        if (plain || html) {
+          setContent((prev) => prev + plain);
+          if (html) setContentHtml(html);
+          textareaRef.current?.focus();
+          return;
+        }
+      }
+      // Fallback for browsers without read()
       const text = await navigator.clipboard.readText();
       setContent((prev) => prev + text);
       textareaRef.current?.focus();
@@ -394,10 +416,12 @@ function InputCard({
   const handleSubmit = async () => {
     if (!content.trim()) return;
     const textToSend = content;
+    const htmlToSend = contentHtml;
     setContent("");
+    setContentHtml(undefined);
     textareaRef.current?.focus();
     try {
-      await onSend(textToSend);
+      await onSend(textToSend, htmlToSend);
     } catch (err) {
       console.error("Failed to send", err);
     }
@@ -408,7 +432,19 @@ function InputCard({
       <textarea
         ref={textareaRef}
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => {
+          setContent(e.target.value);
+          // Clear stored HTML if user manually edits (not from a paste event)
+          if (!justPasted.current) setContentHtml(undefined);
+        }}
+        onPaste={(e) => {
+          const html = e.clipboardData?.getData("text/html");
+          if (html) {
+            justPasted.current = true;
+            setContentHtml(html);
+            setTimeout(() => { justPasted.current = false; }, 0);
+          }
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -488,7 +524,7 @@ function MainApp({ user }: { user: FirebaseAuthUser }) {
     document.documentElement.classList.contains("dark"),
   );
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleSendRef = useRef<(content: string) => Promise<void>>(
+  const handleSendRef = useRef<(content: string, contentHtml?: string) => Promise<void>>(
     async () => {},
   );
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -602,7 +638,7 @@ function MainApp({ user }: { user: FirebaseAuthUser }) {
     if (clips.length > 0) cacheClips(user.uid, clips);
   }, [clips, user.uid]);
 
-  const handleSend = async (content: string) => {
+  const handleSend = async (content: string, contentHtml?: string) => {
     let finalContent = content.trim();
     if (!finalContent) return;
 
@@ -624,6 +660,7 @@ function MainApp({ user }: { user: FirebaseAuthUser }) {
       createdAt: serverTimestamp(),
     };
     if (category) docData.category = category;
+    if (contentHtml) docData.contentHtml = contentHtml;
 
     // Add document immediately for optimistic UI
     const docRef = await addDoc(collection(db, "clips"), docData);
@@ -930,12 +967,23 @@ function ClipCard({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(clip.content);
+      // Restore rich formatting if available (e.g. bold/italic from Word, Notion, etc.)
+      if (clip.contentHtml && typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": new Blob([clip.content], { type: "text/plain" }),
+            "text/html": new Blob([clip.contentHtml], { type: "text/html" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(clip.content);
+      }
       if (onCopy) onCopy(clip.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy", err);
+    } catch {
+      // Fallback — plain text only
+      try { await navigator.clipboard.writeText(clip.content); } catch {}
     }
   };
 
