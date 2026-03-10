@@ -14,7 +14,9 @@ import {
   Smartphone,
   Tablet,
   X,
+  QrCode,
 } from "lucide-react";
+import QRCodeLib from "qrcode";
 import { formatDistanceToNow } from "date-fns";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -442,7 +444,9 @@ function InputCard({
           if (html) {
             justPasted.current = true;
             setContentHtml(html);
-            setTimeout(() => { justPasted.current = false; }, 0);
+            setTimeout(() => {
+              justPasted.current = false;
+            }, 0);
           }
         }}
         onKeyDown={(e) => {
@@ -524,9 +528,9 @@ function MainApp({ user }: { user: FirebaseAuthUser }) {
     document.documentElement.classList.contains("dark"),
   );
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleSendRef = useRef<(content: string, contentHtml?: string) => Promise<void>>(
-    async () => {},
-  );
+  const handleSendRef = useRef<
+    (content: string, contentHtml?: string) => Promise<void>
+  >(async () => {});
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const showToastMsg = (msg: string) => {
@@ -939,6 +943,64 @@ function renderHighlighted(text: string, term: string): React.ReactNode {
   );
 }
 
+// ─── QR Modal ─────────────────────────────────────────────────────────────
+function QrModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    QRCodeLib.toDataURL(url, {
+      width: 240,
+      margin: 2,
+      color: { dark: "#1F1F1F", light: "#FFFFFF" },
+    }).then(setDataUrl);
+  }, [url]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.92, opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 380 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-[#2A2A28] rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-4 max-w-xs w-full mx-4"
+      >
+        <div className="flex items-center justify-between w-full">
+          <p className="text-[13px] font-semibold text-[#1F1F1F] dark:text-[#F4F4F3]">
+            Scan to open
+          </p>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[#6B6B6B] dark:text-[#B3B3B0] hover:bg-[#f0eee6] dark:hover:bg-[#3A3A38] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {dataUrl ? (
+          <img
+            src={dataUrl}
+            alt="QR code"
+            width={200}
+            height={200}
+            className="rounded-xl"
+          />
+        ) : (
+          <div className="w-50 h-50 rounded-xl bg-[#f0eee6] dark:bg-[#30302e] animate-pulse" />
+        )}
+        <p className="text-[11px] text-[#6B6B6B] dark:text-[#B3B3B0] break-all text-center max-w-full line-clamp-3">
+          {url}
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function ClipCard({
   clip,
   onDelete,
@@ -953,9 +1015,16 @@ function ClipCard({
 }) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isLong, setIsLong] = useState(false);
   const DeviceIcon = clip.device ? getDeviceIcon(clip.device) : null;
+
+  // Extract the first URL in the clip content, if any
+  const firstUrl = useMemo(() => {
+    const m = clip.content.match(/https?:\/\/[^\s]+/);
+    return m ? m[0] : null;
+  }, [clip.content]);
 
   useEffect(() => {
     if (contentRef.current) {
@@ -968,7 +1037,11 @@ function ClipCard({
   const handleCopy = async () => {
     try {
       // Restore rich formatting if available (e.g. bold/italic from Word, Notion, etc.)
-      if (clip.contentHtml && typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+      if (
+        clip.contentHtml &&
+        typeof ClipboardItem !== "undefined" &&
+        navigator.clipboard.write
+      ) {
         await navigator.clipboard.write([
           new ClipboardItem({
             "text/plain": new Blob([clip.content], { type: "text/plain" }),
@@ -983,7 +1056,9 @@ function ClipCard({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback — plain text only
-      try { await navigator.clipboard.writeText(clip.content); } catch {}
+      try {
+        await navigator.clipboard.writeText(clip.content);
+      } catch {}
     }
   };
 
@@ -1091,6 +1166,18 @@ function ClipCard({
           </span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          {firstUrl && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowQr(true);
+              }}
+              className="p-1.5 text-[#6B6B6B] dark:text-[#B3B3B0] hover:text-[#C15C37] dark:hover:text-[#C15C37] rounded-lg transition-colors"
+              title="Show QR code"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -1122,6 +1209,11 @@ function ClipCard({
           </button>
         </div>
       </div>
+      <AnimatePresence>
+        {showQr && firstUrl && (
+          <QrModal url={firstUrl} onClose={() => setShowQr(false)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
