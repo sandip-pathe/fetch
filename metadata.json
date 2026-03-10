@@ -1,0 +1,5 @@
+{
+  "name": "QuickClip",
+  "description": "A lightweight, fast context-sharing app to send text and links between your devices.",
+  "requestFramePermissions": []
+}
