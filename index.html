@@ -6,7 +6,57 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>Fetch</title>
+
+    <!-- ── Primary ───────────────────────────────────────────────────────── -->
+    <title>Fetch — Instant Clipboard Sync Across Devices</title>
+    <meta
+      name="description"
+      content="Fetch is a free, open-source shared clipboard. Paste text on your phone and it appears instantly on your laptop — no app install needed. Works as a PWA on any device."
+    />
+    <meta
+      name="keywords"
+      content="fetch, try-fetch, clipboard sync, shared clipboard, cross-device clipboard, paste across devices, clipboard PWA, instant text share, copy paste between devices, open source clipboard"
+    />
+    <meta name="author" content="Sandip Pathe" />
+    <link rel="canonical" href="https://try-fetch.vercel.app/" />
+
+    <!-- ── Open Graph (Facebook / LinkedIn / WhatsApp) ───────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://try-fetch.vercel.app/" />
+    <meta
+      property="og:title"
+      content="Fetch — Instant Clipboard Sync Across Devices"
+    />
+    <meta
+      property="og:description"
+      content="Copy on your phone, paste on your laptop — instantly. Fetch is a free open-source PWA that syncs your clipboard across all your devices in real time."
+    />
+    <meta
+      property="og:image"
+      content="https://try-fetch.vercel.app/docs/hero.svg"
+    />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="500" />
+    <meta property="og:site_name" content="Fetch" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ── Twitter / X Card ─────────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://try-fetch.vercel.app/" />
+    <meta
+      name="twitter:title"
+      content="Fetch — Instant Clipboard Sync Across Devices"
+    />
+    <meta
+      name="twitter:description"
+      content="Copy on your phone, paste on your laptop — instantly. Free, open-source, works as a PWA."
+    />
+    <meta
+      name="twitter:image"
+      content="https://try-fetch.vercel.app/docs/hero.svg"
+    />
+
+    <!-- ── Icons & PWA ───────────────────────────────────────────────────── -->
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="icon" href="/icon-192.png" type="image/png" />
     <link rel="manifest" href="/manifest.json" />
@@ -30,6 +80,32 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Suppress phone/email auto-detection -->
     <meta name="format-detection" content="telephone=no" />
+
+    <!-- ── Structured data (Google rich results) ─────────────────────────── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Fetch",
+        "url": "https://try-fetch.vercel.app/",
+        "description": "Free open-source shared clipboard that syncs text across devices in real time. Works as a PWA on mobile and desktop.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Sandip Pathe",
+          "url": "https://github.com/sandip-pathe"
+        },
+        "codeRepository": "https://github.com/sandip-pathe/fetch",
+        "license": "https://opensource.org/licenses/MIT",
+        "screenshot": "https://try-fetch.vercel.app/docs/hero.svg"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
