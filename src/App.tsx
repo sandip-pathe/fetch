@@ -15,6 +15,7 @@ import {
   Tablet,
   X,
   QrCode,
+  ArrowUp,
 } from "lucide-react";
 import QRCodeLib from "qrcode";
 import { formatDistanceToNow } from "date-fns";
@@ -462,7 +463,7 @@ function InputCard({
         placeholder="Paste text or links here…"
         className="w-full resize-none border-0 bg-transparent px-5 pt-5 pb-3 text-base text-[#1F1F1F] dark:text-[#F4F4F3] placeholder:text-[#6B6B6B] dark:placeholder:text-[#B3B3B0] focus:ring-0 focus:outline-none min-h-28 leading-[1.55]"
       />
-      <div className="flex justify-end px-4 pb-3 pt-1">
+      <div className="flex items-center justify-end gap-2 px-4 pb-3 pt-1">
         <button
           onClick={handlePaste}
           type="button"
@@ -470,6 +471,15 @@ function InputCard({
         >
           <Zap fill="currentColor" strokeWidth={0} className="w-4 h-4" />
           Paste
+        </button>
+        <button
+          onClick={handleSubmit}
+          type="button"
+          disabled={!content.trim()}
+          className="flex items-center justify-center w-9 h-9 rounded-[10px] bg-[#C15C37] text-white hover:bg-[#AD5231] disabled:opacity-30 focus:outline-none transition-all duration-120"
+          title="Send"
+        >
+          <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
         </button>
       </div>
     </div>
